@@ -22,4 +22,8 @@ function search(succeed, fail) {
   });
 }
 
-search(console.log, console.log);
+// search(console.log, console.log);
+
+exports.handler = function(event, context) {
+  search(context.succeed, context.fail);
+};
