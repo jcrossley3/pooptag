@@ -2,33 +2,47 @@ var Twitter = require('twitter');
 var credentials = require('./creds');
 var client = new Twitter(credentials);
 
-var query = 'pooping -filter:retweets';
-var regex = /\bi\W.* pooping/i;
+const QUERY = 'pooping -filter:retweets';
+const REGEX = /\bi('m| am).* pooping/i;
+const WINDOW = 15*60;
 
-/**
- * Returns elapsed seconds until now
- */
-function since(when) {
+function secondsSince(tweet) {
   var now = new Date();
-  var then = new Date(Date.parse(when));
+  var then = new Date(Date.parse(tweet.created_at));
   return Math.floor((now - then) / 1000);
 }
 
-function search(succeed, fail) {
-  console.log("searching");
-  client.get('search/tweets', {q: query}, function(err, tweets, response) {
+function findTweets(callback) {
+  client.get('search/tweets', {q: QUERY}, function(err, tweets, response) {
     if (err || !tweets.statuses) {
+      callback(err);
+    } else {
+      // console.log("JC count=" + tweets.statuses.length);
+      callback(err, tweets.statuses.filter(function(tweet) {
+        return tweet.text.match(REGEX) && secondsSince(tweet) < WINDOW;
+      }));
+    }
+  });
+}
+
+function ding(tweets) {
+  var users = tweets.map((tweet) => "@" + tweet.user.screen_name);
+  if (tweets.length == 2) {
+    console.log("Ding! " + users[0] + " just tagged " + users[1]);
+  } else if (tweets.length > 2) {
+    console.log("Ding! " + users[0] + " just tagged " + users.slice(1,-1).join(", ") + " and " + users.slice(-1));
+  }
+}
+
+function search(succeed, fail) {
+  findTweets(function(err, tweets) {
+    if (err) {
       fail(err);
     } else {
-      // console.log(tweets)
-      console.log("JC: count=" + tweets['statuses'].length)
-      tweets.statuses.forEach(function(tweet) {
-        var match = tweet.text.match(regex);
-        var t = since(tweet.created_at);
-        if (match && t < 10 * 60) {
-          console.log(tweet.id + ": (" + t + "s) @" + tweet.user.screen_name + " \"" + tweet.text + "\"");
-        }
+      tweets.forEach(function(tweet) {
+        console.log(tweet.id + ": (" + secondsSince(tweet) + "s) @" + tweet.user.screen_name + " \"" + tweet.text + "\"");
       });
+      ding(tweets);
     }
     succeed("success");
   });
