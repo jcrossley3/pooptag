@@ -18,6 +18,7 @@ function findTweets(callback) {
       callback(err);
     } else {
       // console.log("JC count=" + tweets.statuses.length);
+      // console.log(tweets);
       callback(err, tweets.statuses.filter(function(tweet) {
         return tweet.text.match(REGEX) && secondsSince(tweet) < WINDOW;
       }));
@@ -28,10 +29,16 @@ function findTweets(callback) {
 function ding(tweets) {
   var users = tweets.map((tweet) => "@" + tweet.user.screen_name);
   if (tweets.length == 2) {
-    console.log("Ding! " + users[0] + " just tagged " + users[1]);
+    return "Ding! " + users[0] + " just tagged " + users[1];
   } else if (tweets.length > 2) {
-    console.log("Ding! " + users[0] + " just tagged " + users.slice(1,-1).join(", ") + " and " + users.slice(-1));
+    return "Ding! " + users[0] + " just tagged " + users.slice(1,-1).join(", ") + " and " + users.slice(-1);
   }
+}
+
+function tweet(message) {
+  client.post('statuses/update', {status: message},  function(error, tweet, response) {
+    if(error) throw error;
+  });
 }
 
 function search(succeed, fail) {
@@ -42,7 +49,11 @@ function search(succeed, fail) {
       tweets.forEach(function(tweet) {
         console.log(tweet.id + ": (" + secondsSince(tweet) + "s) @" + tweet.user.screen_name + " \"" + tweet.text + "\"");
       });
-      ding(tweets);
+      var status = ding(tweets);
+      if (status) {
+        console.log(status);
+        tweet(status);
+      }
     }
     succeed("success");
   });
