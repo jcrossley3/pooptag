@@ -35,10 +35,27 @@ function ding(tweets) {
   }
 }
 
-function tweet(message) {
-  client.post('statuses/update', {status: message},  function(error, tweet, response) {
-    if(error) throw error;
+function tweet(message, tweetUrl) {
+  client.post('statuses/update', {status: message, attachment_url: tweetUrl},  function(error, tweet, response) {
+    if(error) {
+      console.log(error);
+      throw error;
+    }
   });
+}
+
+function retweet(tweet) {
+  var uri = 'statuses/retweet/' + tweet.id_str;
+  client.post(uri, {id: tweet.id_str},  function(error, tweet, response) {
+    if(error) {
+      console.log(error);
+      throw error;
+    }
+  });
+}
+
+function permalink(tweet) {
+  return "https://twitter.com/" + tweet.user.screen_name + "/status/" + tweet.id_str;
 }
 
 function search(succeed, fail) {
@@ -48,11 +65,15 @@ function search(succeed, fail) {
     } else {
       tweets.forEach(function(tweet) {
         console.log(tweet.id + ": (" + secondsSince(tweet) + "s) @" + tweet.user.screen_name + " \"" + tweet.text + "\"");
+        console.log("  link: " + permalink(tweet));
       });
       var status = ding(tweets);
       if (status) {
         console.log(status);
-        tweet(status);
+        tweets.slice(1).forEach(function(tweet) {
+          retweet(tweet);
+        });
+        tweet(status, permalink(tweets[0]));
       }
     }
     succeed("success");
