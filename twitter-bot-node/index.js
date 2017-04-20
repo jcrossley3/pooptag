@@ -76,12 +76,19 @@ function search(succeed, fail) {
         tweet(status, permalink(tweets[0]));
       }
     }
-    succeed("success");
+    succeed({ status: "success" });
   });
 }
 
 exports.handler = function(event, context) {
   search(context.succeed, context.fail);
+};
+
+// OpenWhisk entry point
+exports.main = function(args) {
+  return new Promise(function(resolve, reject) {
+    search(resolve, reject);
+  });
 };
 
 // search(console.log, console.log);
